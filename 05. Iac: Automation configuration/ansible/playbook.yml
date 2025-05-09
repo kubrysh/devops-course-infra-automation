@@ -1,0 +1,17 @@
+- name: Common setup
+  hosts: all
+  roles:
+    - common
+    - postgres_common
+
+- name: Configure PostgreSQL primary server
+  hosts: primary
+  become: yes
+  roles:
+    - postgres_primary
+
+- name: Configure PostgreSQL replica server
+  hosts: replica
+  become: yes
+  roles:
+    - postgres_replica

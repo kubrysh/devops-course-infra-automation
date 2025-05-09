@@ -1,0 +1,42 @@
+- name: Set replication settings in postgresql.conf
+  lineinfile:
+    path: /etc/postgresql/17/main/postgresql.conf
+    regexp: "^#?{{ item.key }}\\s*=.*"
+    line: "{{ item.key }} = {{ item.value }}"
+    state: present
+    create: yes
+  loop:
+    - { key: "listen_addresses", value: "'*'" }
+    - { key: "wal_level", value: "logical" }
+    - { key: "max_wal_senders", value: "10" }
+    - { key: "wal_keep_size", value: "64MB" }
+    - { key: "max_replication_slots", value: "10" }
+    - { key: "max_wal_size", value: "1GB" }
+  notify: Restart PostgreSQL
+
+- name: Allow replica host access in pg_hba.conf
+  lineinfile:
+    path: /etc/postgresql/17/main/pg_hba.conf
+    line: "host    replication     replicator      {{ hostvars['replica']['ansible_host'] }}/32         md5"
+    state: present
+    create: yes
+  notify: Restart PostgreSQL
+
+- name: Create replicator role
+  become_user: postgres
+  postgresql_user:
+    name: replicator
+    password: "{{ lookup('env', 'POSTGRES_PASSWORD') }}"
+    role_attr_flags: REPLICATION,LOGIN
+
+- name: Create library_system DB
+  become_user: postgres
+  postgresql_db:
+    name: library_system
+    state: present
+
+- name: Initialize schema and data
+  become_user: postgres
+  postgresql_query:
+    db: library_system
+    query: "{{ lookup('file', 'roles/postgres_primary/files/init_db.sql') }}"

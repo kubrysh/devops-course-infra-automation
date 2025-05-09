@@ -1,0 +1,11 @@
+- name: Create logical replica cluster
+  shell: pg_createcluster 17 logical-replica --start
+
+- name: Create subscription to publication
+  become_user: postgres
+  shell: |
+    psql -d library_system -c "\
+      CREATE SUBSCRIPTION my_sub \
+      CONNECTION 'host={{ hostvars['primary']['ansible_host'] }} port=5432 \
+      user=replicator password={{ lookup('env', 'POSTGRES_PASSWORD') }} dbname=library_system' \
+      PUBLICATION my_pub;"

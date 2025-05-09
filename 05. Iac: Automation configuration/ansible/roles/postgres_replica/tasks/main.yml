@@ -1,0 +1,2 @@
+- import_tasks: stream_replica.yml
+- import_tasks: logical_replica.yml

@@ -1,0 +1,25 @@
+- name: Drop default cluster (optional)
+  shell: pg_dropcluster --stop 17 main || true
+  ignore_errors: yes
+
+- name: Create streaming cluster
+  shell: pg_createcluster 17 stream-replica --start
+
+- name: Stop stream cluster
+  shell: pg_ctlcluster 17 stream-replica stop
+
+- name: Wipe data dir
+  file:
+    path: /var/lib/postgresql/17/stream-replica
+    state: absent
+
+- name: Run base backup
+  become_user: postgres
+  shell: >
+    pg_basebackup -h {{ hostvars['primary']['ansible_host'] }} -D /var/lib/postgresql/17/stream-replica
+    -U replicator -Fp -Xs -P -R
+  environment:
+    PGPASSWORD: "{{ lookup('env', 'POSTGRES_PASSWORD') }}"
+
+- name: Start stream cluster
+  shell: pg_ctlcluster 17 stream-replica start
