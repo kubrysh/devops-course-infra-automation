@@ -7,7 +7,7 @@ common:
   path_prefix: /loki
   storage:
     filesystem:
-      directory: /loki/chunks
+    directory: /loki/chunks
   replication_factor: 1
   ring:
     instance_addr: 127.0.0.1
